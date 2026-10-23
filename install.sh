@@ -43,6 +43,7 @@ SERVICE
 if [[ -f "$SCRIPT_DIR/icon.svg" ]]; then
     sudo install -Dm 0644 "$SCRIPT_DIR/icon.svg" \
         /usr/share/icons/hicolor/scalable/apps/acer-control-center.svg
+    sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true
 fi
 
 sudo tee /usr/share/applications/acer-control-center.desktop >/dev/null <<'DESKTOP'
