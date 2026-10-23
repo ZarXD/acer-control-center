@@ -1,0 +1,8 @@
+[package]
+name = "acer-control-center"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+zbus = { version = "3", default-features = false, features = ["tokio"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
