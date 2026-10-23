@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BIN_SRC="${1:-./target/release/acer-control-center}"
 
 if [[ ! -f "$BIN_SRC" ]]; then
@@ -39,7 +40,26 @@ RestartSec=3
 WantedBy=multi-user.target
 SERVICE
 
-sudo systemctl daemon-reload
-sudo systemctl enable --now acer-control-center.service
+if [[ -f "$SCRIPT_DIR/icon.svg" ]]; then
+    sudo install -Dm 0644 "$SCRIPT_DIR/icon.svg" \
+        /usr/share/icons/hicolor/scalable/apps/acer-control-center.svg
+fi
 
-echo "installed. check: systemctl status acer-control-center"
+sudo tee /usr/share/applications/acer-control-center.desktop >/dev/null <<'DESKTOP'
+[Desktop Entry]
+Type=Application
+Name=Acer Control Center
+Comment=Fan, performance profile and keyboard backlight control
+Exec=xdg-open http://127.0.0.1:8787
+Icon=acer-control-center
+Terminal=false
+Categories=System;Settings;HardwareSettings;
+Keywords=acer;fan;backlight;performance;profile;
+DESKTOP
+
+sudo systemctl daemon-reload
+sudo systemctl enable acer-control-center.service
+sudo systemctl restart acer-control-center.service
+
+echo "installed. UI: http://127.0.0.1:8787"
+echo "check: systemctl status acer-control-center"
