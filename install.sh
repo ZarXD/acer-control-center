@@ -10,10 +10,24 @@ fi
 
 sudo install -m 0755 "$BIN_SRC" /usr/local/bin/acer-control-center
 
+sudo tee /etc/dbus-1/system.d/com.acer.ControlCenter.conf >/dev/null <<'POLICY'
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <policy user="root">
+    <allow own="com.acer.ControlCenter"/>
+  </policy>
+  <policy context="default">
+    <allow send_destination="com.acer.ControlCenter"/>
+  </policy>
+</busconfig>
+POLICY
+
 sudo tee /etc/systemd/system/acer-control-center.service >/dev/null <<'SERVICE'
 [Unit]
 Description=Acer Control Center daemon
-After=multi-user.target
+After=dbus.service
+Requires=dbus.service
 
 [Service]
 Type=simple
