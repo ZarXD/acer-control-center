@@ -39,13 +39,10 @@ fn parse_mode(value: &str) -> Option<u8> {
 }
 
 fn main() -> eframe::Result<()> {
-    // Choose backend: if Wayland present without X11, force winit to use Wayland.
-    if std::env::var_os("WAYLAND_DISPLAY").is_some() && std::env::var_os("DISPLAY").is_none() {
+    // Choose backend: prefer Wayland when available, otherwise X11 if a display exists
+    if std::env::var_os("WAYLAND_DISPLAY").is_some() {
         std::env::set_var("WINIT_UNIX_BACKEND", "wayland");
-    }
-
-    // Force X11 when X server is present (common case)
-    if std::env::var_os("DISPLAY").is_some() {
+    } else if std::env::var_os("DISPLAY").is_some() {
         std::env::set_var("WINIT_UNIX_BACKEND", "x11");
     }
 

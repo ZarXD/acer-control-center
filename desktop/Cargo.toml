@@ -1,0 +1,16 @@
+[package]
+name = "acer-control-center-gui"
+version = "0.1.0"
+edition = "2021"
+description = "Native Acer Control Center 3.0 clone for Clevo laptops"
+publish = false
+
+[[bin]]
+name = "acer-control-center-gui"
+path = "src/main.rs"
+
+[dependencies]
+eframe = { version = "0.36", default-features = false, features = ["default_fonts", "glow", "wayland", "x11", "persistence"] }
+egui = "0.36"
+image = { version = "0.25", default-features = false, features = ["png"] }
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
