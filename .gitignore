@@ -8,3 +8,13 @@ desktop/target/
 *.so
 build
 artifact
+# Build artefacts – never store in git
+/target/
+/desktop/target/
+*.rlib
+*.so
+*.rmeta
+*.d
+*.a
+*.dll
+*.exe
