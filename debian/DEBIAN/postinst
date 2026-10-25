@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+install -Dm755 /home/izaa/acer-control-center/desktop/target/release/acer-control-center-gui "$${DESTDIR}/usr/local/bin/acer-control-center-gui"
+# copy assets
+install -d "$${DESTDIR}/usr/local/share/acer-control-center/assets/ui"
+cp -r /home/izaa/acer-control-center/desktop/assets/ui/* "$${DESTDIR}/usr/local/share/acer-control-center/assets/ui/"
