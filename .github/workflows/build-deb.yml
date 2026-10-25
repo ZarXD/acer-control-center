@@ -29,8 +29,7 @@ jobs:
 
       - name: Create .deb package
         run: |
-          cd ..
-          ./build-deb.sh          # produces acer-control-center_1.2.0_amd64.deb
+          ./build-deb.sh          # produces acer-control-center_*.deb
 
       - name: Publish release
         uses: softprops/action-gh-release@v1
