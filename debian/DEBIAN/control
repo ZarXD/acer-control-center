@@ -1,0 +1,9 @@
+Package: acer-control-center
+Version: 1.1.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: ZarXD <you@example.com>
+Description: Native Linux replacement for Acer Control Center.
+ Provides fan, performance profile, keyboard backlight and battery controls.
+ Depends: libc6, libx11-6, libgl1
