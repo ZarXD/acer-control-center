@@ -1,8 +1,5 @@
 #!/bin/sh
 set -e
-install -Dm755 /home/izaa/acer-control-center/desktop/target/release/acer-control-center-gui "$${DESTDIR}/usr/local/bin/acer-control-center-gui"
-install -Dm755 /home/izaa/acer-control-center/orchestrator.sh "$${DESTDIR}/usr/local/bin/acer-control-center"
+# The binary and assets are already installed by dpkg (they are in the package).
+# Just ensure the wrapper symlink exists.
 ln -sf /usr/local/bin/acer-control-center /usr/local/bin/acer-control-center-gui
-# copy assets
-install -d "$${DESTDIR}/usr/local/share/acer-control-center/assets/ui"
-cp -r /home/izaa/acer-control-center/desktop/assets/ui/* "$${DESTDIR}/usr/local/share/acer-control-center/assets/ui/"
