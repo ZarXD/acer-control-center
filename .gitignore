@@ -6,3 +6,5 @@ target/
 desktop/target/
 *.rlib
 *.so
+build
+artifact
