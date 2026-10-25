@@ -1,1 +1,4 @@
-/target
+target/
+desktop/target/
+*.rlib
+*.so
