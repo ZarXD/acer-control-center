@@ -17,5 +17,5 @@ cp -r desktop/assets/ui/* build/usr/local/share/acer-control-center/assets/ui/
 # Make orchestrator executable
 chmod +x build/usr/local/bin/acer-control-center
 
-dpkg-deb --root-owner-group --build build acer-control-center_1.1.2_amd64.deb
-echo "created acer-control-center_1.1.2_amd64.deb"
+dpkg-deb --root-owner-group --build build acer-control-center_1.2.0_amd64.deb
+echo "created acer-control-center_1.2.0_amd64.deb"
