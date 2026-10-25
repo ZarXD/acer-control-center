@@ -1,0 +1,43 @@
+name: Build & Release .deb
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Build release binary
+        run: |
+          cd desktop
+          cargo clean
+          cargo build --release
+
+      - name: Create .deb package
+        run: |
+          cd ..
+          ./build-deb.sh          # produces acer-control-center_1.2.0_amd64.deb
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Acer Control Center ${{ github.ref_name }}"
+          generate_release_notes: true
+          files: acer-control-center_*.deb
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
