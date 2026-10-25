@@ -39,13 +39,8 @@ fn parse_mode(value: &str) -> Option<u8> {
 }
 
 fn main() -> eframe::Result<()> {
-    // Require Wayland session; no X11 fallback.
-    if std::env::var_os("WAYLAND_DISPLAY").is_some() {
-        std::env::set_var("WINIT_UNIX_BACKEND", "wayland");
-    } else {
-        eprintln!("Acer Control Center GUI requires a Wayland session (WAYLAND_DISPLAY not set)");
-        std::process::exit(1);
-    }
+    // Backend selection is handled by wrapper script (acer-control-center).
+    // No forced WINIT_UNIX_BACKEND here; winit auto‑detects.
 
     
     let mut launch = Launch {

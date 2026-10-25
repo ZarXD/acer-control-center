@@ -6,4 +6,4 @@ Architecture: amd64
 Maintainer: ZarXD <you@example.com>
 Description: Native Linux replacement for Acer Control Center.
  Provides fan, performance profile, keyboard backlight and battery controls.
- Depends: libc6, libx11-6, libgl1
+ Depends: libc6, libx11-6, libgl1, libwayland-client0 (>= 1.18), libwayland-egl1, libwayland-dev

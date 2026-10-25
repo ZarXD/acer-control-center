@@ -14,3 +14,4 @@ eframe = { version = "0.36", default-features = false, features = ["default_font
 egui = "0.36"
 image = { version = "0.25", default-features = false, features = ["png"] }
 zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+# Wayland feature enabled via eframe/egui; winit not needed as explicit dep
