@@ -2,3 +2,7 @@ target/
 desktop/target/
 *.rlib
 *.so
+target/
+desktop/target/
+*.rlib
+*.so
