@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  # releases: write   # uncomment if using newer runner
 
 jobs:
   build-deb:
@@ -24,30 +23,28 @@ jobs:
           sed -i "s/^version = .*/version = \"$VERSION\"/" Cargo.toml
           echo "Building version $VERSION"
 
-      - name: Install Wayland build dependencies
+      - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwayland-dev libxkbcommon-dev libegl1-mesa-dev
+          sudo apt-get install -y \
+            libwayland-dev libxkbcommon-dev libegl1-mesa-dev \
+            libx11-dev libxcursor-dev libxrandr-dev libxi-dev libgl1-mesa-dev
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
+        uses: dtolnay/rust-toolchain@stable
 
-      - name: Build release binary
-        run: |
-          cd desktop
-          cargo clean
-          cargo build --release
+      - name: Build daemon
+        run: cargo build --release
+
+      - name: Build GUI
+        working-directory: desktop
+        run: cargo build --release
 
       - name: Create .deb package
-        run: |
-          ./build-deb.sh          # produces acer-control-center_*.deb
+        run: ./build-deb.sh
 
       - name: Publish release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: "Acer Control Center ${{ github.ref_name }}"

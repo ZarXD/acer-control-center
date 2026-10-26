@@ -34,6 +34,9 @@ pub struct App {
     last_color: Instant,
     sized: bool,
     frames: u64,
+    fixup_until: Instant,
+    fixup_hard_until: Instant,
+    fixup_done: bool,
 }
 
 impl App {
@@ -61,6 +64,9 @@ impl App {
             last_color: Instant::now() - Duration::from_secs(1),
             sized: false,
             frames: 0,
+            fixup_until: Instant::now() + Duration::from_millis(1500),
+            fixup_hard_until: Instant::now() + Duration::from_secs(4),
+            fixup_done: false,
         };
         if app.capture.is_some() {
             app.page = launch.page;
@@ -210,6 +216,7 @@ impl eframe::App for App {
             }
             self.sized = true;
         }
+        self.window_fixup(&ctx);
         self.backend.poll();
         let state = self.backend.state().clone();
         if state.error_seq != self.last_error_seq {
@@ -320,6 +327,58 @@ impl eframe::App for App {
 }
 
 impl App {
+    /// GNOME/Mutter auto-maximizes windows that nearly fill the work area.
+    /// The window starts with a temporary max-size clamp so Mutter's restore
+    /// geometry cannot overshoot the design canvas. During the first moments
+    /// we undo the maximize and ask for the design size again; once the window
+    /// settles the clamp is removed so the user can resize freely.
+    fn window_fixup(&mut self, ctx: &egui::Context) {
+        if self.capture.is_some() || self.fixup_done {
+            return;
+        }
+
+        let now = Instant::now();
+        let design = egui::vec2(theme::WIN_W, theme::WIN_H);
+        let maximized = ctx.input(|i| i.viewport().maximized).unwrap_or(false);
+        let size = ctx.content_rect().size();
+        let correct = !maximized && (size - design).length() <= 2.0;
+
+        if now < self.fixup_until {
+            // Repaint continuously so a maximize configure is undone on the
+            // very next frame instead of up to a quarter second later.
+            ctx.request_repaint();
+            if maximized {
+                ctx.send_viewport_cmd(ViewportCommand::Maximized(false));
+                ctx.send_viewport_cmd(ViewportCommand::InnerSize(design));
+            } else if !correct {
+                ctx.send_viewport_cmd(ViewportCommand::InnerSize(design));
+            }
+            return;
+        }
+
+        if correct {
+            // Startup is over: drop the temporary clamp so the window can be
+            // resized larger again.
+            ctx.send_viewport_cmd(ViewportCommand::MaxInnerSize(egui::vec2(
+                10000.0, 10000.0,
+            )));
+            self.fixup_done = true;
+            return;
+        }
+
+        if now >= self.fixup_hard_until {
+            // Leave the clamp in place rather than risk an oversized window.
+            self.fixup_done = true;
+            return;
+        }
+
+        ctx.request_repaint();
+        if maximized {
+            ctx.send_viewport_cmd(ViewportCommand::Maximized(false));
+        }
+        ctx.send_viewport_cmd(ViewportCommand::InnerSize(design));
+    }
+
     fn drag_window(&self, ctx: &egui::Context) {
         let Some(pointer) = ctx.pointer_hover_pos() else {
             return;

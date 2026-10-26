@@ -1,0 +1,14 @@
+[Unit]
+Description=Acer Control Center hardware daemon
+After=dbus.service
+Requires=dbus.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/acer-control-center-daemon
+Restart=on-failure
+RestartSec=3
+StateDirectory=acer-control-center
+
+[Install]
+WantedBy=multi-user.target

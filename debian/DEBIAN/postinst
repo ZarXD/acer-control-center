@@ -1,5 +1,29 @@
 #!/bin/sh
 set -e
-# The binary and assets are already installed by dpkg (they are in the package).
-# Just ensure the wrapper symlink exists.
+
+# The binary and assets are already installed by dpkg.
 ln -sf /usr/local/bin/acer-control-center /usr/local/bin/acer-control-center-gui
+
+# Older install.sh shipped a unit in /etc that starts the GUI wrapper as root.
+# It shadows the packaged unit in /lib/systemd/system and keeps the service
+# restarting forever. Remove only that exact legacy unit.
+LEGACY_UNIT=/etc/systemd/system/acer-control-center.service
+if [ -f "$LEGACY_UNIT" ] && grep -q '^ExecStart=/usr/local/bin/acer-control-center$' "$LEGACY_UNIT"; then
+    rm -f "$LEGACY_UNIT"
+fi
+
+# A dangling wants symlink left by the legacy unit would keep the service
+# "enabled" while pointing at a file that no longer exists.
+rm -f /etc/systemd/system/multi-user.target.wants/acer-control-center.service
+
+# D-Bus policy changes require a reload before the daemon starts.
+systemctl reload dbus.service 2>/dev/null || true
+
+systemctl daemon-reload 2>/dev/null || true
+systemctl enable acer-control-center.service 2>/dev/null || true
+systemctl reset-failed acer-control-center.service 2>/dev/null || true
+systemctl restart acer-control-center.service 2>/dev/null || true
+
+# Refresh desktop/icon caches when available.
+update-desktop-database /usr/share/applications 2>/dev/null || true
+gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true

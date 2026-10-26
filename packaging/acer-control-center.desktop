@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Acer Control Center
+Comment=Fan, performance profile and keyboard backlight control
+Exec=/usr/local/bin/acer-control-center
+TryExec=/usr/local/bin/acer-control-center
+Icon=acer-control-center
+Terminal=false
+Categories=Settings;HardwareSettings;
+Keywords=acer;fan;backlight;performance;profile;
+StartupWMClass=acer-control-center

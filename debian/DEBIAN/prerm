@@ -1,4 +1,12 @@
 #!/bin/sh
 set -e
-rm -f "$${DESTDIR}/usr/local/bin/acer-control-center-gui"
-rm -rf "$${DESTDIR}/usr/local/share/acer-control-center"
+
+case "$1" in
+    remove)
+        systemctl stop acer-control-center.service 2>/dev/null || true
+        systemctl disable acer-control-center.service 2>/dev/null || true
+        ;;
+    upgrade)
+        systemctl stop acer-control-center.service 2>/dev/null || true
+        ;;
+esac

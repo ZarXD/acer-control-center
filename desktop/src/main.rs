@@ -97,8 +97,10 @@ fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([theme::WIN_W, theme::WIN_H])
-            .with_min_inner_size([1200.0, 770.0])
+            .with_min_inner_size([900.0, 600.0])
             .with_decorations(false)
+            .with_maximized(false)
+            .with_max_inner_size([theme::WIN_W, theme::WIN_H])
             .with_resizable(true)
             .with_transparent(false)
             .with_app_id("acer-control-center")
