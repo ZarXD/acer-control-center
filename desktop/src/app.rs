@@ -99,9 +99,7 @@ impl App {
                     }
                 }
                 Action::FanAuto(on) => {
-                    if on {
-                        self.backend.send(Command::FanAuto);
-                    }
+                    self.backend.send(Command::FanAuto(on));
                 }
                 Action::Color(rgb, commit) => {
                     if commit || self.last_color.elapsed() >= Duration::from_millis(120) {

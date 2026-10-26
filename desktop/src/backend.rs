@@ -48,7 +48,7 @@ pub enum Command {
     Profile(u8),
     Backlight(u8),
     FanSpeed(u8, u8),
-    FanAuto,
+    FanAuto(bool),
     Color([u8; 3]),
     ChargeLimit(u8),
     Refresh,
@@ -107,6 +107,7 @@ trait ControlCenter {
     fn get_fan_temp(&self, fan: u8) -> zbus::Result<i16>;
     fn set_fan_speed(&self, fan: u8, percent: u8) -> zbus::Result<bool>;
     fn set_fan_auto(&self) -> zbus::Result<bool>;
+    fn set_fan_auto_mode(&self, enabled: bool) -> zbus::Result<bool>;
     fn get_color(&self) -> zbus::Result<String>;
     fn set_color(&self, red: u8, green: u8, blue: u8) -> zbus::Result<bool>;
     fn get_charge_limit(&self) -> zbus::Result<u8>;
@@ -124,58 +125,9 @@ fn worker(cmd_rx: Receiver<Command>, state_tx: Sender<Snapshot>) {
     let mut next_reconnect = std::time::Instant::now() + Duration::from_secs(2);
     let mut seq = 0u64;
 
-    fn record_error(snapshot: &mut Snapshot, seq: &mut u64, text: String) {
-        *seq += 1;
-        snapshot.error = Some(text);
-        snapshot.error_seq = *seq;
-    }
-
     loop {
-        let mut command_error: Option<String> = None;
         while let Ok(command) = cmd_rx.try_recv() {
-            let Some(p) = proxy.as_ref() else {
-                snapshot.online = false;
-                record_error(
-                    &mut snapshot,
-                    &mut seq,
-                    "Hardware service is offline. Run the install script and retry.".into(),
-                );
-                continue;
-            };
-            let result: Result<bool, zbus::Error> = match command {
-                Command::Profile(id) => p.set_profile(id),
-                Command::Backlight(value) => p.set_backlight(value),
-                Command::FanSpeed(fan, percent) => p.set_fan_speed(fan, percent),
-                Command::FanAuto => p.set_fan_auto(),
-                Command::Color([r, g, b]) => p.set_color(r, g, b),
-                Command::ChargeLimit(value) => p.set_charge_limit(value),
-                Command::Refresh => Ok(true),
-            };
-            match result {
-                Ok(true) => {}
-                Ok(false) => command_error = Some("The hardware rejected that change.".into()),
-                Err(error) => {
-                    let text = error.to_string();
-                    if text.contains("UnknownMethod") || text.contains("Unknown method") {
-                        command_error = Some(
-                            "This control needs the updated service. Re-run the install step."
-                                .into(),
-                        );
-                    } else if text.contains("ServiceUnknown")
-                        || text.contains("NameHasNoOwner")
-                        || text.contains("not provided by any .service files")
-                    {
-                        snapshot.online = false;
-                        proxy = None;
-                        command_error = Some(
-                            "Hardware service is offline. Start acer-control-center.service."
-                                .into(),
-                        );
-                    } else {
-                        command_error = Some(text);
-                    }
-                }
-            }
+            run_command(&mut proxy, &mut snapshot, &mut seq, command);
         }
 
         // Values that do not require the daemon.
@@ -249,14 +201,76 @@ fn worker(cmd_rx: Receiver<Command>, state_tx: Sender<Snapshot>) {
             snapshot.online = true;
         }
 
-        if let Some(text) = command_error {
-            record_error(&mut snapshot, &mut seq, text);
-        }
-
         if state_tx.send(snapshot.clone()).is_err() {
             break;
         }
-        let _ = cmd_rx.recv_timeout(Duration::from_millis(650));
+        match cmd_rx.recv_timeout(Duration::from_millis(650)) {
+            Ok(command) => run_command(&mut proxy, &mut snapshot, &mut seq, command),
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
+            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
+        }
+    }
+}
+
+fn record_error(snapshot: &mut Snapshot, seq: &mut u64, text: String) {
+    *seq += 1;
+    snapshot.error = Some(text);
+    snapshot.error_seq = *seq;
+}
+
+fn run_command(
+    proxy: &mut Option<ControlCenterProxyBlocking<'static>>,
+    snapshot: &mut Snapshot,
+    seq: &mut u64,
+    command: Command,
+) {
+    let result = {
+        let Some(p) = proxy.as_ref() else {
+            snapshot.online = false;
+            record_error(
+                snapshot,
+                seq,
+                "Hardware service is offline. Run the install script and retry.".into(),
+            );
+            return;
+        };
+        let result: Result<bool, zbus::Error> = match command {
+            Command::Profile(id) => p.set_profile(id),
+            Command::Backlight(value) => p.set_backlight(value),
+            Command::FanSpeed(fan, percent) => p.set_fan_speed(fan, percent),
+            Command::FanAuto(enabled) => p.set_fan_auto_mode(enabled),
+            Command::Color([r, g, b]) => p.set_color(r, g, b),
+            Command::ChargeLimit(value) => p.set_charge_limit(value),
+            Command::Refresh => Ok(true),
+        };
+        result
+    };
+    match result {
+        Ok(true) => {}
+        Ok(false) => record_error(snapshot, seq, "The hardware rejected that change.".into()),
+        Err(error) => {
+            let text = error.to_string();
+            if text.contains("UnknownMethod") || text.contains("Unknown method") {
+                record_error(
+                    snapshot,
+                    seq,
+                    "This control needs the updated service. Re-run the install step.".into(),
+                );
+            } else if text.contains("ServiceUnknown")
+                || text.contains("NameHasNoOwner")
+                || text.contains("not provided by any .service files")
+            {
+                snapshot.online = false;
+                *proxy = None;
+                record_error(
+                    snapshot,
+                    seq,
+                    "Hardware service is offline. Start acer-control-center.service.".into(),
+                );
+            } else {
+                record_error(snapshot, seq, text);
+            }
+        }
     }
 }
 

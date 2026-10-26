@@ -5,8 +5,10 @@ use zbus::{dbus_interface, ConnectionBuilder};
 
 const KBD_PATH: &str = "/sys/class/leds/rgb:kbd_backlight/brightness";
 const KBD_MAX_PATH: &str = "/sys/class/leds/rgb:kbd_backlight/max_brightness";
+const KBD_RGB_PATH: &str = "/sys/class/leds/rgb:kbd_backlight/multi_intensity";
 const BAT_PATH: &str = "/sys/class/power_supply/BAT0/capacity";
 const BAT_STATUS_PATH: &str = "/sys/class/power_supply/BAT0/status";
+const CHARGE_LIMIT_PATH: &str = "/sys/class/power_supply/BAT0/charge_control_end_threshold";
 const STATE_DIR: &str = "/var/lib/acer-control-center";
 const PROFILE_PATH: &str = "/var/lib/acer-control-center/profile";
 
@@ -127,13 +129,13 @@ fn set_fan_percent(fan: u8, percent: u8) -> bool {
     ret >= 0
 }
 
-/// Hand fan control back to the embedded controller firmware.
-fn set_fan_auto() -> bool {
+/// Hand fan control back to the embedded controller firmware, or take it back.
+fn set_fan_auto_mode(enabled: bool) -> bool {
     let fd = match tuxedo_io() {
         Some(fd) => fd,
         None => return false,
     };
-    let mut argument: i32 = 0x0f;
+    let mut argument: i32 = if enabled { 0x0f } else { 0x00 };
     let ret = unsafe {
         libc::ioctl(
             fd.as_raw_fd(),
@@ -142,6 +144,27 @@ fn set_fan_auto() -> bool {
         )
     };
     ret >= 0
+}
+
+fn set_fan_auto() -> bool {
+    set_fan_auto_mode(true)
+}
+
+fn get_color() -> String {
+    fs::read_to_string(KBD_RGB_PATH)
+        .map(|s| s.trim().to_string())
+        .unwrap_or_default()
+}
+
+fn set_color(red: u8, green: u8, blue: u8) -> bool {
+    fs::write(KBD_RGB_PATH, format!("{red} {green} {blue}")).is_ok()
+}
+
+fn set_charge_limit(value: u8) -> bool {
+    if !(50..=100).contains(&value) {
+        return false;
+    }
+    write_u8(CHARGE_LIMIT_PATH, value)
 }
 
 fn set_profile(id: u8) -> bool {
@@ -199,6 +222,26 @@ impl ControlImpl {
     }
     fn set_fan_auto(&self) -> bool {
         set_fan_auto()
+    }
+
+    fn set_fan_auto_mode(&self, enabled: bool) -> bool {
+        set_fan_auto_mode(enabled)
+    }
+
+    fn get_color(&self) -> String {
+        get_color()
+    }
+
+    fn set_color(&self, red: u8, green: u8, blue: u8) -> bool {
+        set_color(red, green, blue)
+    }
+
+    fn get_charge_limit(&self) -> u8 {
+        read_u8(CHARGE_LIMIT_PATH)
+    }
+
+    fn set_charge_limit(&self, value: u8) -> bool {
+        set_charge_limit(value)
     }
 
     fn set_profile(&self, id: u8) -> bool {

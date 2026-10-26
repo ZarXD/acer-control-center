@@ -939,7 +939,7 @@ pub fn keyboard(c: &mut Canvas, actions: &mut Vec<Action>, controls: &mut Contro
 
     c.text_left(
         c.p(200.0, 976.0),
-        "Color writes require the updated root service; brightness works with the installed daemon.",
+        "Brightness and color are written through the hardware service.",
         theme::sans(12.0 * c.scale),
         theme::TXT_FAINT,
     );
