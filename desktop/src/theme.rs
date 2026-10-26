@@ -1,6 +1,7 @@
 use egui::{
     Color32, FontData, FontDefinitions, FontFamily, FontId, Painter, Pos2, Stroke, Visuals,
 };
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 pub const WIN_W: f32 = 1600.0;
@@ -19,6 +20,8 @@ pub const AMBER: Color32 = Color32::from_rgb(244, 181, 61);
 pub const RED: Color32 = Color32::from_rgb(255, 84, 112);
 pub const PANEL: Color32 = Color32::from_rgb(15, 13, 17);
 
+static HAS_ALDRICH: AtomicBool = AtomicBool::new(false);
+
 pub fn alpha(c: Color32, a: u8) -> Color32 {
     Color32::from_rgba_unmultiplied(c.r(), c.g(), c.b(), a)
 }
@@ -28,7 +31,12 @@ pub fn sans(size: f32) -> FontId {
 }
 
 pub fn display(size: f32) -> FontId {
-    FontId::new(size, FontFamily::Name("Aldrich".into()))
+    let family = if HAS_ALDRICH.load(Ordering::Relaxed) {
+        FontFamily::Name("Aldrich".into())
+    } else {
+        FontFamily::Proportional
+    };
+    FontId::new(size, family)
 }
 
 pub fn install(ctx: &egui::Context) {
@@ -70,6 +78,9 @@ pub fn install(ctx: &egui::Context) {
             .or_default();
         family.push("Aldrich".to_owned());
         family.push("NotoSans".to_owned());
+        HAS_ALDRICH.store(true, Ordering::Relaxed);
+    } else {
+        HAS_ALDRICH.store(false, Ordering::Relaxed);
     }
     ctx.set_fonts(fonts);
 
