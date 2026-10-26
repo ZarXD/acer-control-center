@@ -9,6 +9,9 @@ const KBD_RGB_PATH: &str = "/sys/class/leds/rgb:kbd_backlight/multi_intensity";
 const BAT_PATH: &str = "/sys/class/power_supply/BAT0/capacity";
 const BAT_STATUS_PATH: &str = "/sys/class/power_supply/BAT0/status";
 const CHARGE_LIMIT_PATH: &str = "/sys/class/power_supply/BAT0/charge_control_end_threshold";
+const CHARGE_START_PATH: &str = "/sys/class/power_supply/BAT0/charge_control_start_threshold";
+const CHARGE_START_VALUES_PATH: &str = "/sys/class/power_supply/BAT0/charge_control_start_available_thresholds";
+const CHARGE_TYPE_PATH: &str = "/sys/class/power_supply/BAT0/charge_type";
 const STATE_DIR: &str = "/var/lib/acer-control-center";
 const PROFILE_PATH: &str = "/var/lib/acer-control-center/profile";
 
@@ -164,7 +167,30 @@ fn set_charge_limit(value: u8) -> bool {
     if !(50..=100).contains(&value) {
         return false;
     }
-    write_u8(CHARGE_LIMIT_PATH, value)
+    if value >= 100 {
+        let _ = fs::write(CHARGE_TYPE_PATH, "Standard");
+        let start_ok = write_u8(CHARGE_START_PATH, 95);
+        let end_ok = write_u8(CHARGE_LIMIT_PATH, 100);
+        return start_ok && end_ok;
+    }
+
+    // The EC expects a start threshold below the end threshold.
+    let mut start = 40u8;
+    if let Ok(text) = fs::read_to_string(CHARGE_START_VALUES_PATH) {
+        for candidate in text.split_whitespace().filter_map(|v| v.parse::<u8>().ok()) {
+            if candidate < value && candidate > start {
+                start = candidate;
+            }
+        }
+    }
+    if start >= value {
+        start = value.saturating_sub(10).max(1);
+    }
+
+    let custom_ok = fs::write(CHARGE_TYPE_PATH, "Custom").is_ok();
+    let start_ok = write_u8(CHARGE_START_PATH, start);
+    let end_ok = write_u8(CHARGE_LIMIT_PATH, value);
+    custom_ok && start_ok && end_ok
 }
 
 fn set_profile(id: u8) -> bool {
