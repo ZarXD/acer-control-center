@@ -6,4 +6,4 @@ if [ -n "$WAYLAND_DISPLAY" ] && [ -z "$DISPLAY" ]; then
 elif [ -n "$DISPLAY" ]; then
     export WINIT_UNIX_BACKEND=x11
 fi
-exec /usr/local/bin/acer-control-center-gui "$@"
+exec /usr/local/bin/acer-control-center-gui-bin "$@"
